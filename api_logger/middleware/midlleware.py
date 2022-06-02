@@ -34,3 +34,29 @@ class api_log_middleware:
                          "status_code": status_code
             })
         return response
+
+class SaveRequest:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        start_time = time.time() 
+        response = self.get_response(request) 
+        execution_time = int((time.time() - start_time)*1000)    
+
+        request_log = Request(
+            endpoint=request.get_full_path(),
+            response_code=response.status_code,
+            method=request.method,
+            remote_address=self.get_client_ip(request),
+            exec_time=execution_time,
+            response=str(response.content),
+            equest=str(request.body),
+        )
+
+        if not request.user.is_anonymous:
+            request_log.user = request.user
+
+        
+        request_log.save() 
+        return response
